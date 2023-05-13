@@ -374,14 +374,8 @@ async fn poll_hue_buttons(
 
             let mqtt_device = mqtt_devices.get_mut(&button_id).unwrap();
 
-            
-            if mqtt_device.sensor_value == Some("false".to_owned()) && matches!(button_sensor_value.as_ref(), "initial_press" | "long_press" | "repeat"){
-                mqtt_device.sensor_value = Some("true".to_owned());
-                result.push(mqtt_device.clone());
-            }
-
-            if mqtt_device.sensor_value == Some("true".to_owned()) && matches!(button_sensor_value.as_ref(), "short_release" | "long_release") {    
-                mqtt_device.sensor_value = Some("false".to_owned());
+            if is_updated(mqtt_device, button_sensor_value) {
+                update_sensor_state(mqtt_device);
                 result.push(mqtt_device.clone());
             }
         }
@@ -401,4 +395,26 @@ async fn poll_hue_buttons(
     }
 
     Ok(())
+}
+
+pub fn is_updated(mqtt_device: &MqttDevice, button_sensor_value: String) -> bool{
+    if mqtt_device.sensor_value == Some("false".to_owned()) && matches!(button_sensor_value.as_ref(), "initial_press" | "long_press" | "repeat"){
+        return true;
+    }
+
+    if mqtt_device.sensor_value == Some("true".to_owned()) && matches!(button_sensor_value.as_ref(), "short_release" | "long_release"){
+        return true;
+    }
+
+    return false;
+}
+
+pub fn update_sensor_state(mqtt_device: &mut MqttDevice) {
+    if mqtt_device.sensor_value == Some("false".to_owned()) {
+        mqtt_device.sensor_value = Some("true".to_owned());
+    }
+
+    if mqtt_device.sensor_value == Some("true".to_owned()) {
+        mqtt_device.sensor_value = Some("false".to_owned());
+    }
 }
